@@ -1,128 +1,171 @@
 #!/bin/bash
 #
-#this install script will support all 3 major linux distrubtions
+#### this script is very much a work in progress
+###### this is a total rewrite of the first script supporting cmd line arguments
 #
-#This program was written by Damon
-#
-$arch=3
-clear ; echo "This install script has more features planned and is currently in beta, I plan to make it playable from the command line without ever locating it"
-echo ; echo "This program was written by Richerman, If you have any issues please let me know on discord"
-echo ; echo "This program looks for a jak2 folder at ~/Documents and installs at ~/Games/jak-project"
-$jakiso = 0 
-while ( $jakiso -eq 0 )
-	do
-		if ( test ~/Documents/jak2 || test ~/Documents/Jak2 )
-		then 
-			echo ; echo "Jak2 folder has been found."
-			$jakiso=1
-		else
-			echo ; echo "jak2 folder not found."
-		read -p "\nProgram will now pause, please extract your jak2.iso into a folder named jak2 at ~/Documents and press enter when ready to continue" enter
+echo
+echo
+distro=unkown
 
-	fi
-done
-$dependstrue = 1 ; while ( $dependstrue -eq 1 )
-do
-	read -p "\nDo you need dependencies installed as well?\nenter y or n" depends
-		if ( depends = y )
-			then
-				echo "\ninstalling depencies for your distrubtion based on your package manager"
-				$dependstrue = 2
-	
-		elif ( depends = n )
-			then
-				echo "\nWill not install dependencies"
-				
-		else 
-			then
-				echo "\nSorry that is not a valid option. Please enter y for yes and n for no"
-
-		fi
-done
-if ( test cd Games/jak-project/ )			### test for /Games/jak-project
-	then 
-		cd Games/ ; rm -rf jak-project/
-		git clone https://github.com/open-goal/jak-project
-		test cp ~/Documents/Jak2 ~/Games/jak-project/iso_data
-		test cp ~/Documents/jak2 ~/Games/jak-project/iso_data
-elif
-	then
-		if ( test cd Games/ )
-			then
-				echo
-		elif
-		then
-			mkdir Games/ ; cd Games/
-		fi
-fi
-
-
-#####						install depencies packages
-if ( $dependstrue -eq 2 )
-	then
-
-		if ( test which apt )
-		then
-			sudo apt install clang lld gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python
-			sudo sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
-			##echo ; echo "Debian based depencies installed"
-			##cmake -B build && cmake --build build -j 8
-			#./test.sh
-			cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
-			./test.sh
-		elif ( test which pacman )			### arch based
-		then
-			sudo pacman -S cmake libpulse base-devel nasm python libx11 libxrandr libxinerama libxcursor libxi
-			yay -S go-task
-			cmake -B build && cmake --build build -j 8
-			./test.sh
-			$arch = 1
-		elif ( test which dnf )
-		then
-			sudo dnf install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
-sudo sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
-			cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -B build
-cmake --build build -j$(nproc)
-			./test.sh
-		elif 
-		then
-			echo ; echo "couldn't identify your package manager. No dependencies installed"
-			
-		fi
-	elif			##### install game without dependencies 
-	then	
-		if ( test which apt )
-		then
-			cmake -B build && cmake --build build -j 8
-			./test.sh
-				
-		elif ( test which pacman )
-		then
-			cmake -B build && cmake --build build -j 8
-			./test.sh
-			$arch = 1
-		elif ( test which dnf )
-		then
-			cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -B build
-cmake --build build -j$(nproc)
-			./test.sh
-		else 
-		then
-			echo "couldn't identify your package manager"
-		fi
-fi
-if ( $arch -eq 1 )
+Git_install() {
+if ( cd ~/Games/jak-project )
 then
-	go-task set-game-jak2
-	go-task set-decomp-ntscv1			####  which label version of the game it is \\\\\\\\\ more work needed here
-	go-task extract
-	clear ; echo "on the next screen, type (mi) to build the game."
-	task repl
-elif
-then 
-task set-game-jak2
-task set-decomp-ntscv1
-task extract
-clear ; echo ; echo "on the next screen, type (mi) to build the game."
-task repl
+	if ( cd ~/Games/jak-project/iso_data/jak1 )
+	then
+		cp ~/Games/jak-project/iso_data/jak1 ~/Documents
+	fi
+	if ( cd ~/Games/jak-project/iso_data/jak2 )
+	then
+		cp ~/Games/jak-project/iso_data/jak2 ~/Documents
+	fi
+	cd ~/Games/ ; git clone https://github.com/open-goal/jak-project
+	Distrocheck
+	cd jak-project/
+	if [[ $distro = debian || $distro = arch ]]
+	then
+	cmake -B build && cmake --build build -j 8
+	./test.sh
+	else
+	cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -B build
+	cmake --build build -j$(nproc)
+	./test.sh
+	fi
+	cp ~/Documents/jak1/ ~/Games/jak-project/iso_data/ ; cp ~/Documents/jak2/ ~/Games/jak-project/iso_data/
+elif ( cd ~/Games )
+then
+	cd ~/Games/ ; git clone https://github.com/open-goal/jak-project
+	Distrocheck
+	cd jak-project/
+	if [ $distro = debian || $distro = arch ]
+	then
+	cmake -B build && cmake --build build -j 8
+	./test.sh
+	else
+	cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -B build
+	cmake --build build -j$(nproc)
+	./test.sh
+	fi
+
+	cp ~/Documents/jak1/ ~/Games/jak-project/iso_data/ ; cp ~/Documents/jak2/ ~/Games/jak-project/iso_data/
+	echo ; echo "Jak1 folder and Jak2 folder copied from ~/Documents"
+else
+mkdir ~/Games
+cd ~/Games/ ; git clone https://github.com/open-goal/jak-project
+	Distrocheck
+	cd jak-project/
+	if [ $distro = debian || $distro = arch ]
+	then
+	cmake -B build && cmake --build build -j 8
+	./test.sh
+	else
+	cmake -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -B build
+	cmake --build build -j$(nproc)
+	./test.sh
+	fi
+
+	cp ~/Documents/jak1/ ~/Games/jak-project/iso_data/ ; cp ~/Documents/jak2/ ~/Games/jak-project/iso_data/
+	echo ; echo "Jak1 folder and Jak2 folder copied from ~/Documents"
 fi
+
+}
+
+Distrocheck() {
+	local distro
+	if ( which apt )
+	then
+		distro=debian
+	elif ( which rpm )
+		distro=redhat
+	then
+		distro=redhat
+	elif ( which pacman )
+	then
+		distro=arch
+	else
+		echo ; echo "Error!! Unable to identify your package manager to determine distro base."
+		exit
+	fi
+}
+Depency_install() {
+local distro
+case $distro in
+	arch) 
+		pacman -S cmake libpulse base-devel nasm python libx11 libxrandr libxinerama libxcursor libxi
+		sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin ;;
+	debian)
+		apt install gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python lld clang
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
+	redhat)
+	sudo dnf install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
+sudo sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
+esac		
+}
+##################################################### command line options The actual program
+
+echo ; while [ -n "$1" ]
+do
+case "$1" in
+	-1)						### play jak 1
+		cd ~games/jak-project
+		if [ $distro != arch ]
+		then
+			task set-game-jak1
+			task boot-game-retail
+		else 
+			go-task set-game-jak1
+			go-task boot-game-retail
+		fi;;
+	-2)						### play jak 2
+		cd ~Games/jak-project
+		if [ $distro != arch ]
+		then
+			echo ; echo "Warning!! Jak2 can only be played in debug mode" ; task set-game-jak2
+			task boot-game
+		else 
+			echo ; echo "Warning!! Jak2 can only be played in debug mode" ; go-task set-game-jak2
+			go-task boot-game
+		fi;;
+	-h)			### help
+		echo ; echo "-1 = play jak1, -2 = play jak2, -jak1i = install jak1, jak2i = install jak2"
+		echo ; echo "add -d if you need depencies installed along with the game for example -jak1i -d or jak2i -d"
+		echo ; echo "please press -h to show this again"
+		break;;
+	-d) 				## install depencies
+	if [ whoami = root ]
+	then
+			Distrocheck
+			Depency_install
+	else
+		echo ; echo "Error!! Please run this script as root to install depencies"
+		exit
+		fi;;
+	-jak1i)				## install jak1 and source
+			echo ; echo "This command will also rebuild from source"
+			Git_install
+			cd ~/Games/jak-project
+			if [ $distro != arch ]
+			then
+				task set-game-jak1 ; task set-decomp-ntscv1 ; task extract
+				task repl
+			else
+				go-task set-game-jak1 ; go-task set-decomp-ntscv1 ; go-task extract
+				go-task replace
+				fi ;;
+	-jak2i)					## install jak2 and source
+					echo ; echo "This command will also rebuild from source"
+			Git_install
+			cd ~/Games/jak-project/
+			if [ $distro != arch ]
+			then
+				task set-game-jak2 ; task set-decomp-ntscv1 ; task extract
+				task repl
+			else
+				go-task set-game-jak2 ; go-task set-decomp-ntscv1 ; go-task extract
+				go-task replace
+				fi ;;
+
+	*)	echo ; echo "That's not a valid option, please add -h for help";;
+#shift
+esac
+exit
+done
