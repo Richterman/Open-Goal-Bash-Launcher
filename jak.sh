@@ -36,7 +36,7 @@ then
 	cd ~/Games/ ; git clone https://github.com/open-goal/jak-project
 	Distrocheck
 	cd jak-project/
-	if [ $distro = debian || $distro = arch ]
+	if ( $distro = debian || $distro = arch )
 	then
 	cmake -B build && cmake --build build -j 8
 	./test.sh
@@ -96,7 +96,7 @@ case $distro in
 		apt install gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python lld clang
 sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
 	redhat)
-	sudo dnf install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
+	sudo dnf -y install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
 sudo sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
 esac		
 }
@@ -106,7 +106,7 @@ echo ; while [ -n "$1" ]
 do
 case "$1" in
 	-1)						### play jak 1
-		cd ~games/jak-project
+		cd ~/Games/jak-project
 		if [ $distro != arch ]
 		then
 			task set-game-jak1
@@ -116,7 +116,7 @@ case "$1" in
 			go-task boot-game-retail
 		fi;;
 	-2)						### play jak 2
-		cd ~Games/jak-project
+		cd ~/Games/jak-project
 		if [ $distro != arch ]
 		then
 			echo ; echo "Warning!! Jak2 can only be played in debug mode" ; task set-game-jak2
@@ -126,19 +126,47 @@ case "$1" in
 			go-task boot-game
 		fi;;
 	-h)			### help
-		echo ; echo "-1 = play jak1, -2 = play jak2, -jak1i = install jak1, jak2i = install jak2"
-		echo ; echo "add -d if you need depencies installed along with the game for example -jak1i -d or jak2i -d"
+		echo ; echo "-1 = play jak1, -2 = play jak2, -jak1i = install jak1, jak2i = install jak2, build = install jak 1 and jak 2"
 		echo ; echo "please press -h to show this again"
+		echo ; echo "run the depencdy check to add this script to /usr/local/bin so you can run directly from cmd line"
 		break;;
 	-d) 				## install depencies
 	if [ whoami = root ]
 	then
 			Distrocheck
 			Depency_install
+			cp $( pwd ) /usr/local/bin
+			mv /usr/local/bin/jak.sh /usr/local/bin/jak
 	else
 		echo ; echo "Error!! Please run this script as root to install depencies"
 		exit
 		fi;;
+
+	-build)									## build both games
+	echo ; echo "This command will also rebuild from source"
+			Git_install
+			cd ~/Games/jak-project
+			if [ $distro != arch ]
+			then
+				task set-game-jak1 ; task set-decomp-ntscv1 ; task extract
+				echo ; echo "build game"
+				./goalc --cmd "(mi)"
+			else
+				go-task set-game-jak1 ; go-task set-decomp-ntscv1 ; go-task extract
+				./goalc --cmd "(mi)"
+				fi
+				cd ~/Games/jak-project/
+			if [ $distro != arch ]
+			then
+				task set-game-jak2 ; task set-decomp-ntscv1 ; task extract
+				./goalc --cmd "(mi)"
+				exit
+			else
+				go-task set-game-jak2 ; go-task set-decomp-ntscv1 ; go-task extract
+				./goalc --cmd "(mi)"
+				exit
+				fi ;;
+
 	-jak1i)				## install jak1 and source
 			echo ; echo "This command will also rebuild from source"
 			Git_install
@@ -146,10 +174,10 @@ case "$1" in
 			if [ $distro != arch ]
 			then
 				task set-game-jak1 ; task set-decomp-ntscv1 ; task extract
-				task repl
+				./goalc --cmd "(mi)"
 			else
 				go-task set-game-jak1 ; go-task set-decomp-ntscv1 ; go-task extract
-				go-task replace
+				./goalc --cmd "(mi)"
 				fi ;;
 	-jak2i)					## install jak2 and source
 					echo ; echo "This command will also rebuild from source"
