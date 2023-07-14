@@ -23,6 +23,20 @@ git_run() {
 		
 	./test.sh ; echo ; echo "Succesfully installed git and tested"
 }
+jak1_install() {
+python ./scripts/tasks/update-env.py --game jak1
+		python ./scripts/tasks/update-env.py --decomp_config $version
+	{{.DECOMP_BIN_RELEASE_DIR}}/decompiler \"./decompiler/config/{{.DECOMP_CONFIG}}\" \"./iso_data\" \"./decompiler_out\" --version \"{{.DECOMP_CONFIG_VERSION}}\" --config-override {\"decompile_code\": false, \"levels_extract\": true, \"allowed_objects\": []}
+		./goalc --cmd "(mi)"
+		clear ; echo "jak1 installed"
+		}
+jak2_install() {
+python ./scripts/tasks/update-env.py --game jak2
+		python ./scripts/tasks/update-env.py --decomp_config $version
+		{{.DECOMP_BIN_RELEASE_DIR}}/decompiler \"./decompiler/config/{{.DECOMP_CONFIG}}\" \"./iso_data\" \"./decompiler_out\" --version \"{{.DECOMP_CONFIG_VERSION}}\" --config-override {\"decompile_code\": false, \"levels_extract\": true, \"allowed_objects\": []}
+		./goalc --cmd "(mi)"
+		clear ; echo "Jak2 installed"
+		}
 Upate() {
 	jak1=0
 	jak2=0
@@ -47,7 +61,7 @@ Upate() {
 		distrocheck
 		cd ~/Games
 		git_run	
-	if [ $jak1 = 1 ]
+	if [ $jak1 -eq 1 ]
 	then
 		mv ~/jak1 $install_location/iso_data
 	elif
@@ -61,21 +75,13 @@ Upate() {
 	fi
 	if [ $jak1 = 1 ]
 	then
-		python ./scripts/tasks/update-env.py --game jak1
-		python ./scripts/tasks/update-env.py --decomp_config $version
-	{{.DECOMP_BIN_RELEASE_DIR}}/decompiler ; ./decompiler/config/{{.DECOMP_CONFIG}} ; ./iso_data ; ./decompiler_out ; --version ; {{.DECOMP_CONFIG_VERSION}} ;  --config-override ; {\"decompile_code\": false, \"levels_extract\": true, \"allowed_objects\": []}'"	
-		./goalc --cmd "(mi)"
-		clear ; echo "jak1 installed"
+		jak1_install
 	else
 		echo ; echo "jak1 not installed "
 	fi
 	if [ $jak2 = 2 ]
 	then
-		python ./scripts/tasks/update-env.py --game jak2
-		python ./scripts/tasks/update-env.py --decomp_config $version
-		"{{.DECOMP_BIN_RELEASE_DIR}}/decompiler \"./decompiler/config/{{.DECOMP_CONFIG}}\" \"./iso_data\" \"./decompiler_out\" --version \"{{.DECOMP_CONFIG_VERSION}}\" --config-override '{\"decompile_code\": false, \"levels_extract\": true, \"allowed_objects\": []}'"
-		./goalc --cmd "(mi)"
-		clear ; echo "Jak2 installed"
+		jak2_install
 	else
 		echo ; echo "Jak2 not installed"
 	fi
@@ -85,19 +91,34 @@ Upate() {
 }
 
 Depency_install() {
-local distro
+
 case $distro in
 	arch) 
 		pacman -S cmake libpulse base-devel nasm python libx11 libxrandr libxinerama libxcursor libxi
-		sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin ;;
 	debian)
 		apt install gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python lld clang
-sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
 	redhat)
 	sudo dnf -y install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
-sudo sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin;;
 esac		
 }
+
+Distrocheck() {
+	local distro
+	if ( which apt )
+	then
+		distro=debian
+	elif ( which rpm )
+		distro=redhat
+	then
+		distro=redhat
+	elif ( which pacman )
+	then
+		distro=arch
+	else
+		echo ; echo "Error!! Unable to identify your package manager to determine distro base."
+		exit
+	fi
+	}
 ##################################################### command line options The actual program
 
 echo ; while [ -n "$1" ]
@@ -160,12 +181,44 @@ case "$1" in
 		break;;
 		
 	-install)
-		Depency_install
+		if [ whoami != root ]
+		then
+			echo ; echo "Error, this command must be ran as root"
+			else
+				Depency_install
+				git_run
+				if [ cd ~/Documents/jak1 ]
+				then
+					mv ~/Documents/jak1 $install_location/iso_data
+					echo ; echo "Jak1 successfully moved"
+					jak1=3
+				else
+					echo ; echo "Jak1 not found, Please place an extracted jak1 folder in ~/Documents"
+				fi
+				if [ cd ~/Documents/jak2 ]
+				then
+					mv ~/Documents/jak2 $install_location/iso_data
+					echo ; echo "Jak2 successfully moved"
+					jak2=3
+				else
+				echo ; echo "Jak2 not found. Please plan extracted jak2 folder in ~/Documents"
+				fi
+				if [ $jak1 -eq 3 ]
+				then
+					jak1_install
+				else
+					echo
+				fi
+				if [ $jak2 -eq 3 ]
+				then
+					jak2_install
+				else
+					echo
+				fi
+				cd ; cp ~/Downloads/jak.sh /usr/local/bin
+			fi ;;
 
-
-	
-
-	*)	echo ; echo "That's not a valid option, please add -h for help";;
+		*)	echo ; echo "That's not a valid option, please add -h for help";;
 #shift
 esac
 exit
