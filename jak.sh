@@ -40,17 +40,17 @@ python ./scripts/tasks/update-env.py --game jak2
 Upate() {
 	jak1=0
 	jak2=0
-	if [ cd $install_location ]
+	if [ -d $install_location ]
 	then 
-		cd ~/
-		if [ cd $install_location/iso_data/jak1 ]
+		cd
+		if [ -d $install_location/iso_data/jak1 ]
 		then
 			mv $install_location/iso_data/jak1 ~/
 			jak1=1
 		else 
 			echo
 		fi
-		if [ cd $install_location/iso_data/jak2 ]
+		if [ -d $install_location/iso_data/jak2 ]
 		then
 			mv $install_locaiton/iso_data/jak2 ~/
 			jak2=1
@@ -64,13 +64,13 @@ Upate() {
 	if [ $jak1 -eq 1 ]
 	then
 		mv ~/jak1 $install_location/iso_data
-	elif
+	else
 		echo
 	fi
 	if [ $jak2 = 1 ]
 	then
 		mv ~/jak2 $install_location/iso_data/
-	elif
+	else
 		echo
 	fi
 	if [ $jak1 = 1 ]
@@ -87,18 +87,19 @@ Upate() {
 	fi
 	else 	
 	echo ; echo "Games not installed, please run -install option"
-	fi	
+fi
 }
 
 Depency_install() {
 
 case $distro in
 	arch) 
-		pacman -S cmake libpulse base-devel nasm python libx11 libxrandr libxinerama libxcursor libxi
+		pacman -S cmake libpulse base-devel nasm python libx11 libxrandr libxinerama libxcursor libxi;;
 	debian)
-		apt install gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python lld clang
+		apt install gcc make cmake build-essential g++ nasm clang-format libxrandr-dev libxinerama-dev libxcursor-dev libpulse-dev libxi-dev python lld clang;;
 	redhat)
-	sudo dnf -y install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel
+	sudo dnf -y install cmake python lld clang nasm libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel pulseaudio-libs-devel mesa-libGL-devel;;
+	*) :
 esac		
 }
 
@@ -125,19 +126,19 @@ echo ; while [ -n "$1" ]
 do
 case "$1" in
 	-jak1)						### play jak 1
-		if [ cd $insatll_location/jak1 ]
+		if [ -d $insatll_location/jak1 ]
 		then
 			cd $install_location
 			echo ; echo "Booting jak in retail"
 			python ./scripts/tasks/update-env.py --game jak1
 			{{.GK_BIN_RELEASE_DIR}}/gk -v --game {{.GAME}} -- -boot -fakeiso
 			cd
-		else
+			else
 			echo ; echo "Jak1 not installed"
 		fi;;
 
 	-jak1debug)
-		if [ cd $install_location/jak1 ]
+		if [ $install_location/jak1 -d ]
 		then
 			cd $install_location
 			echo ; echo "Booting jak1 in debug"
@@ -149,7 +150,7 @@ case "$1" in
 		fi;;
 			
 	-jak2)		### play jak2 in retail
-		if [ cd $install_location/iso_data/jak2 ]
+		if [ $install_location/iso_data/jak2 -d ]
 		then
 			cd $install_location
 			echo ; echo "Booting in retail"
@@ -158,7 +159,7 @@ case "$1" in
 			echo ; echo "Jak2 not installed"
 		fi;;
 	-jak2debug)	### play jak 2 in debug
-		if [ cd $install_location/jak2 ]
+		if [ $install_location/jak2 -d ]
 		then
 			cd $install_location
 			echo ; echo "Booting in debug"
@@ -170,7 +171,7 @@ case "$1" in
 			echo ; echo "Jak2 not installed"
 		fi;;		
 	
-	-h || -help)			### help
+	-h)			### help
 		echo ; echo -e "\t\t\tcommand list"
 		echo ; echo -e "\tjak - jak1 \t = play jak1 in retail"
 		echo ; echo -e "\tjak -jak2 \t = play jak2 in retail"
@@ -181,13 +182,12 @@ case "$1" in
 		break;;
 		
 	-install)
-		if [ whoami != root ]
+		SYSTEM_USER_NAME=$(id -un)
+		if [[ "${SYSTEM_USER_NAME}" == 'root'  ]]
 		then
-			echo ; echo "Error, this command must be ran as root"
-			else
-				Depency_install
+		Depency_install
 				git_run
-				if [ cd ~/Documents/jak1 ]
+				if [ ~/Documents/jak1 -d ]
 				then
 					mv ~/Documents/jak1 $install_location/iso_data
 					echo ; echo "Jak1 successfully moved"
@@ -195,7 +195,7 @@ case "$1" in
 				else
 					echo ; echo "Jak1 not found, Please place an extracted jak1 folder in ~/Documents"
 				fi
-				if [ cd ~/Documents/jak2 ]
+				if [ ~/Documents/jak2 -d ]
 				then
 					mv ~/Documents/jak2 $install_location/iso_data
 					echo ; echo "Jak2 successfully moved"
@@ -203,23 +203,27 @@ case "$1" in
 				else
 				echo ; echo "Jak2 not found. Please plan extracted jak2 folder in ~/Documents"
 				fi
-				if [ $jak1 -eq 3 ]
+				if [ $jak1 = '3' ]
 				then
 					jak1_install
 				else
 					echo
 				fi
-				if [ $jak2 -eq 3 ]
+				if [ $jak2 = '3' ]
 				then
 					jak2_install
 				else
 					echo
 				fi
 				cd ; cp ~/Downloads/jak.sh /usr/local/bin
+
+			else
+				echo ; echo "Error, this command must be ran as root"
 			fi ;;
 
 		*)	echo ; echo "That's not a valid option, please add -h for help";;
 #shift
 esac
+cd
 exit
 done
